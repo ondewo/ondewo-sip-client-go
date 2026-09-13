@@ -50,7 +50,7 @@ import sippb "github.com/ondewo/ondewo-sip-client-go/api/ondewo/sip"
 
 > **Major versions.** From major version 2 on, a Go module path carries its major version as a
 > `/vN` suffix (see [the module reference](https://go.dev/ref/mod#major-version-suffixes)), so the
-> import path of release `7.1.2` is `github.com/ondewo/ondewo-sip-client-go/v7/api/ondewo/sip`. The
+> import path of release `5.4.0` is `github.com/ondewo/ondewo-sip-client-go/v5/api/ondewo/sip`. The
 > `Makefile` derives the suffix from `ONDEWO_SIP_VERSION`; run `make TEST` to print the
 > exact module path of the current release.
 
@@ -76,36 +76,38 @@ import (
 
     "google.golang.org/grpc"
     "google.golang.org/grpc/credentials"
-    "google.golang.org/grpc/metadata"
+    "google.golang.org/protobuf/types/known/emptypb"
 
     sippb "github.com/ondewo/ondewo-sip-client-go/api/ondewo/sip"
+    "github.com/ondewo/ondewo-sip-client-go/auth"
 )
 
 func main() {
+    // auth.WithBearerToken sends the Keycloak access token as `authorization: Bearer <token>` on
+    // every call of this connection, exactly as the other ONDEWO clients do. It refuses to attach
+    // itself to a plaintext connection, so it is paired with transport credentials here.
     conn, err := grpc.NewClient(
         "grpc-sip.ondewo.com:443",
         grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
+        auth.WithBearerToken(os.Getenv("ONDEWO_SIP_ACCESS_TOKEN")),
     )
     if err != nil {
         log.Fatalf("could not connect: %v", err)
     }
     defer conn.Close()
 
-    // Credentials travel as request metadata, exactly as in the other ONDEWO clients.
-    bearerToken := os.Getenv("ONDEWO_SIP_ACCESS_TOKEN")
     ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
     defer cancel()
-    ctx = metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+bearerToken)
 
-    // Every service of the API has a generated New<Service>Client constructor. Browse
-    // api/ondewo/sip/ for the ones this product exposes.
-    client := sippb.NewExampleServiceClient(conn)
+    // The API has a single service, Sip, with its generated NewSipClient constructor. Browse
+    // api/ondewo/sip/ for the RPCs it exposes.
+    client := sippb.NewSipClient(conn)
 
-    response, err := client.ExampleMethod(ctx, &sippb.ExampleRequest{})
+    status, err := client.SipGetSipStatus(ctx, &emptypb.Empty{})
     if err != nil {
         log.Fatalf("rpc failed: %v", err)
     }
-    log.Printf("response: %v", response)
+    log.Printf("sip status: %v (%v)", status.GetStatusType(), status.GetAccountName())
 }
 ```
 
@@ -118,6 +120,8 @@ func main() {
 │       └── sip
 │           ├── *.pb.go                    <----- messages (protoc-gen-go)
 │           └── *_grpc.pb.go               <----- service stubs (protoc-gen-go-grpc)
+├── auth                                   <----- HAND WRITTEN - the `authorization: Bearer` credential
+├── tests                                  <----- HAND WRITTEN - the go test suite (see Testing below)
 ├── ondewo-sip-api                             <----- submodule @ https://github.com/ondewo/ondewo-sip-api
 ├── ondewo-proto-compiler                  <----- submodule @ https://github.com/ondewo/ondewo-proto-compiler
 ├── .github
@@ -163,6 +167,60 @@ A few properties of the generation worth knowing:
 * Generation needs no network: every module the stubs are compiled against was pre-downloaded when
   the image was built.
 
+## Testing
+
+```shell
+make check_stubs            ## assert the generated stubs are committed
+make test                   ## go test over every package
+make test_coverage          ## the same suite under -race, plus the hand-written coverage gate
+make test_coverage_generated ## report (never gate) how much of api/ the suite exercises
+```
+
+The suite lives in `tests/` — never below `api/`, which is wiped on every regeneration — and needs
+neither a network nor a running ONDEWO server. gRPC connections are made over an in-memory
+`bufconn` listener, so a client stub, a server stub and a real HTTP/2 connection are exercised
+in-process.
+
+What it asserts about the **generated** code:
+
+* `SipStatus`, the message every RPC of this service answers with — a string scalar, an enum, a
+  `map<string, string>` and a well-known `Timestamp` — survives `proto.Marshal` →
+  `proto.Unmarshal` unchanged, and a truncated payload is rejected;
+* the repeated nested messages of a `SipStatusHistoryResponse` survive the same round trip;
+* the enum zero value is pinned. SIP has **no** `*_UNSPECIFIED` enum at all — the zero member of
+  `SipStatus.StatusType` is `NO_SESSION`, a real state — so the test pins that member by name
+  rather than assuming the convention;
+* the `grpc.ServiceDesc` of `ondewo.sip.Sip` (from `protoc-gen-go-grpc`) lists exactly the RPCs its
+  proto descriptor (from `protoc-gen-go`) does — the two plugins run separately and each half
+  compiles on its own, so a disagreement is otherwise invisible;
+* the generated `NewSipClient` binds to a connection, and every generated unary stub is actually
+  called over the wire and has to come back as `codes.Unimplemented` — all 11 RPCs of this service,
+  which proves each one marshals its request and builds a method name the transport accepts;
+* an RPC answered by a fake server round-trips its response, and one the server leaves to the
+  generated `UnimplementedSipServer` base type reports `codes.Unimplemented`;
+* the compiled `.proto` file is registered in the global descriptor registry as proto3.
+
+Two assertions the sibling ONDEWO go clients make are **deliberately absent** here rather than
+faked, and `tests/api_surface_test.go` says so at the top of the file:
+
+* **no proto3 explicit-presence test** — `ondewo/sip/sip.proto` declares no `optional` scalar at
+  all, so there is no field whose presence could be asserted;
+* **no streaming test** — `ondewo.sip.Sip` has no streaming RPC; all 11 of its methods are unary, so
+  the unary sweep already covers the whole service.
+
+**Coverage.** The threshold (`COVERAGE_THRESHOLD` in the `Makefile`, currently **100%**) is
+enforced over the hand-written packages only — `auth/` — because everything below `api/` is machine
+output: gating on it would measure how much of protoc's output a test happens to walk. The stubs
+are still exercised for real, as listed above; `make test_coverage_generated` prints their figure
+(**38.8%** of generated statements at the time of writing) for the record. `make test_coverage` also
+fails if it ends up measuring no hand-written function at all, so a deleted package cannot turn the
+gate into a green no-op.
+
+`.github/workflows/ci.yml` runs exactly these targets on `ubuntu-latest` against the go directive of
+`go.mod` and the toolchain the compiler image generates with. It does **not** build the compiler
+image or check out the submodules: it builds and tests the committed stubs, which is what a
+consumer of the module gets.
+
 ## Release
 
 The release is driven entirely by the `Makefile` — see `make help` for the full list of targets.
@@ -172,7 +230,7 @@ make ondewo_release                         ## credentials from the devops-accou
 ```
 
 `make release` builds, commits, creates the release branch, pushes **two** tags for the same commit
-— the ONDEWO release tag (`7.1.2`) and the `v`-prefixed tag Go tooling requires (`v7.1.2`) — creates
+— the ONDEWO release tag (`5.4.0`) and the `v`-prefixed tag Go tooling requires (`v5.4.0`) — creates
 the GitHub release from the matching `RELEASE.md` entry, and asks the public module proxy to fetch
 the new version.
 
