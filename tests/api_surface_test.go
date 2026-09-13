@@ -38,7 +38,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	sip "github.com/ondewo/ondewo-sip-client-go/api/ondewo/sip"
+	sip "github.com/ondewo/ondewo-sip-client-go/v5/api/ondewo/sip"
 )
 
 // protoFileCount is the number of .proto files below ondewo-sip-api/ondewo that the compiler

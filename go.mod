@@ -1,4 +1,4 @@
-module github.com/ondewo/ondewo-sip-client-go
+module github.com/ondewo/ondewo-sip-client-go/v5
 
 go 1.25.0
 
