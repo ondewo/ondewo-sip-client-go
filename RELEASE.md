@@ -8,7 +8,7 @@
 
 * Initial release of the ONDEWO SIP (SIP Telephony) gRPC client for Go. The module
   ships the stubs generated from the [ONDEWO SIP API](https://github.com/ondewo/ondewo-sip-api)
-  by version 5.15.0 of the
+  by version 5.15.1 of the
   [ONDEWO Proto Compiler](https://github.com/ondewo/ondewo-proto-compiler): one `*.pb.go` of
   messages and one `*_grpc.pb.go` of service stubs per `.proto`, below `api/ondewo/sip/`,
   compiled against the `google.golang.org/protobuf` and `google.golang.org/grpc` runtimes pinned by
