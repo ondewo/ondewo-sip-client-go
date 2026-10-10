@@ -43,7 +43,7 @@ The client is a plain Go module, published to the public module proxy
 is no registry account, no token and no `go install` step in between. Add it to your module with:
 
 ```shell
-go get github.com/ondewo/ondewo-sip-client-go/v5@latest   ## or @v5.4.0 to pin an exact release
+go get github.com/ondewo/ondewo-sip-client-go/v5@latest   ## or @v5.4.1 to pin an exact release
 ```
 
 Then import the package of the service you need:
@@ -60,9 +60,9 @@ import sippb "github.com/ondewo/ondewo-sip-client-go/v5/api/ondewo/sip"
 > major version must be compatible`. The suffix moves with the major version of the ONDEWO SIP API,
 > so a `6.x` release will be imported as `/v6`, and a program can depend on both at once.
 
-Releases are tagged twice on the same commit: with the ONDEWO release number (`5.4.0`), which is
+Releases are tagged twice on the same commit: with the ONDEWO release number (`5.4.1`), which is
 what the [GitHub releases page](https://github.com/ondewo/ondewo-sip-client-go/releases) lists and
-what the rest of the ONDEWO client fleet uses, and with the `v`-prefixed spelling (`v5.4.0`), which
+what the rest of the ONDEWO client fleet uses, and with the `v`-prefixed spelling (`v5.4.1`), which
 is the only tag shape Go tooling recognises as a module version. Use the `v`-prefixed one in
 `go get`, `go.mod` and anywhere else a version is written.
 
@@ -411,7 +411,7 @@ make ondewo_release                         ## credentials from the devops-accou
 ```
 
 `make release` builds, commits, creates the release branch, pushes **two** tags for the same commit
-— the ONDEWO release tag (`5.4.0`) and the `v`-prefixed tag Go tooling requires (`v5.4.0`) — creates
+— the ONDEWO release tag (`5.4.1`) and the `v`-prefixed tag Go tooling requires (`v5.4.1`) — creates
 the GitHub release from the matching `RELEASE.md` entry, and asks the public module proxy to fetch
 the new version.
 
@@ -422,7 +422,7 @@ of exactly what git has under that tag, so **the tag *is* the published artifact
 registry account to own, no namespace to claim and no publishing credential to rotate. The whole
 correctness question is therefore about the tag:
 
-* it must be spelled `v<semver>` — `5.4.0` alone is not a Go module version;
+* it must be spelled `v<semver>` — `5.4.1` alone is not a Go module version;
 * the module path in `go.mod` must end in `/vN` matching the tag's major version, and that path is
   baked by `protoc-gen-go` into every generated import, so it cannot be patched after generation —
   `make generate_ondewo_protos` passes it to the compiler image as the third positional argument;
