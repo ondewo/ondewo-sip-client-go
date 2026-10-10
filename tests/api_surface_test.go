@@ -16,14 +16,10 @@
 // enum. It is the ONLY file that differs from the sibling go clients - generated_code_test.go and
 // auth_test.go are product agnostic and are copied over unchanged.
 //
-// Two tests the sibling clients have are deliberately ABSENT here rather than faked:
-//
-//   - a proto3 explicit-presence test. ondewo/sip/sip.proto declares no `optional` scalar at all
-//     (grep the stubs for `proto3,oneof`: zero hits), so there is no field whose presence could be
-//     asserted. The sibling clients that do have one keep the test.
-//   - a streaming test. ondewo.sip.Sip has no streaming RPC - all 11 of its methods are unary -
-//     so ServiceDesc.Streams is empty and the unary sweep in generated_code_test.go covers the
-//     whole service on its own.
+// A test the sibling clients have is deliberately ABSENT here rather than faked: a proto3
+// explicit-presence test. ondewo/sip/sip.proto declares no `optional` scalar at all (its `oneof`s
+// are real choices between messages), so there is no field whose presence could be asserted. The
+// sibling clients that do have one keep the test.
 package tests
 
 import (
@@ -63,9 +59,10 @@ var clientConstructors = map[string]func(grpc.ClientConnInterface) any{
 // expectedMethods pins RPCs by name. The descriptor cross-check in generated_code_test.go proves
 // the two generators agree with each other; it cannot notice an RPC that was renamed upstream,
 // because both halves would be renamed together. These are spelled out so that a rename is a
-// failing test rather than a silently broken consumer. All 11 RPCs of the service are listed -
-// SIP has no streaming RPC, so ServiceDesc.Methods is the whole surface.
+// failing test rather than a silently broken consumer. All 14 RPCs of the service are listed.
 var expectedMethods = map[string][]string{
+	// SipStreamCallAudio is bidirectional streaming, so it lives in ServiceDesc.Streams rather than
+	// .Methods - the lookup has to consider both.
 	"ondewo.sip.Sip": {
 		"SipStartSession",
 		"SipEndSession",
@@ -78,6 +75,9 @@ var expectedMethods = map[string][]string{
 		"SipPlayWavFiles",
 		"SipMute",
 		"SipUnMute",
+		"SipReportAnsweringMachineDetected",
+		"SipSetCallMediaControl",
+		"SipStreamCallAudio",
 	},
 }
 
