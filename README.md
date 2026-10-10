@@ -43,7 +43,7 @@ The client is a plain Go module, published to the public module proxy
 is no registry account, no token and no `go install` step in between. Add it to your module with:
 
 ```shell
-go get github.com/ondewo/ondewo-sip-client-go/v5@latest   ## or @v5.4.1 to pin an exact release
+go get github.com/ondewo/ondewo-sip-client-go/v5@latest   ## or @v5.5.0 to pin an exact release
 ```
 
 Then import the package of the service you need:
@@ -60,9 +60,9 @@ import sippb "github.com/ondewo/ondewo-sip-client-go/v5/api/ondewo/sip"
 > major version must be compatible`. The suffix moves with the major version of the ONDEWO SIP API,
 > so a `6.x` release will be imported as `/v6`, and a program can depend on both at once.
 
-Releases are tagged twice on the same commit: with the ONDEWO release number (`5.4.1`), which is
+Releases are tagged twice on the same commit: with the ONDEWO release number (`5.5.0`), which is
 what the [GitHub releases page](https://github.com/ondewo/ondewo-sip-client-go/releases) lists and
-what the rest of the ONDEWO client fleet uses, and with the `v`-prefixed spelling (`v5.4.1`), which
+what the rest of the ONDEWO client fleet uses, and with the `v`-prefixed spelling (`v5.5.0`), which
 is the only tag shape Go tooling recognises as a module version. Use the `v`-prefixed one in
 `go get`, `go.mod` and anywhere else a version is written.
 
@@ -364,19 +364,17 @@ What it asserts about the **generated** code:
   proto descriptor (from `protoc-gen-go`) does — the two plugins run separately and each half
   compiles on its own, so a disagreement is otherwise invisible;
 * the generated `NewSipClient` binds to a connection, and every generated unary stub is actually
-  called over the wire and has to come back as `codes.Unimplemented` — all 11 RPCs of this service,
-  which proves each one marshals its request and builds a method name the transport accepts;
+  called over the wire and has to come back as `codes.Unimplemented` — all 13 unary RPCs of this
+  service, which proves each one marshals its request and builds a method name the transport accepts;
+  the bidirectional `SipStreamCallAudio` is pinned by name and by the descriptor cross-check;
 * an RPC answered by a fake server round-trips its response, and one the server leaves to the
   generated `UnimplementedSipServer` base type reports `codes.Unimplemented`;
 * the compiled `.proto` file is registered in the global descriptor registry as proto3.
 
-Two assertions the sibling ONDEWO go clients make are **deliberately absent** here rather than
-faked, and `tests/api_surface_test.go` says so at the top of the file:
-
-* **no proto3 explicit-presence test** — `ondewo/sip/sip.proto` declares no `optional` scalar at
-  all, so there is no field whose presence could be asserted;
-* **no streaming test** — `ondewo.sip.Sip` has no streaming RPC; all 11 of its methods are unary, so
-  the unary sweep already covers the whole service.
+One assertion the sibling ONDEWO go clients make is **deliberately absent** here rather than
+faked, and `tests/api_surface_test.go` says so at the top of the file: there is **no proto3
+explicit-presence test**, because `ondewo/sip/sip.proto` declares no `optional` scalar at all, so
+there is no field whose presence could be asserted.
 
 What it asserts about the **hand-written** `client` package (`tests/tls_test.go`), with real
 handshakes against an in-process gRPC server on a loopback port and a PKI generated per run:
@@ -411,7 +409,7 @@ make ondewo_release                         ## credentials from the devops-accou
 ```
 
 `make release` builds, commits, creates the release branch, pushes **two** tags for the same commit
-— the ONDEWO release tag (`5.4.1`) and the `v`-prefixed tag Go tooling requires (`v5.4.1`) — creates
+— the ONDEWO release tag (`5.5.0`) and the `v`-prefixed tag Go tooling requires (`v5.5.0`) — creates
 the GitHub release from the matching `RELEASE.md` entry, and asks the public module proxy to fetch
 the new version.
 
@@ -422,7 +420,7 @@ of exactly what git has under that tag, so **the tag *is* the published artifact
 registry account to own, no namespace to claim and no publishing credential to rotate. The whole
 correctness question is therefore about the tag:
 
-* it must be spelled `v<semver>` — `5.4.1` alone is not a Go module version;
+* it must be spelled `v<semver>` — `5.5.0` alone is not a Go module version;
 * the module path in `go.mod` must end in `/vN` matching the tag's major version, and that path is
   baked by `protoc-gen-go` into every generated import, so it cannot be patched after generation —
   `make generate_ondewo_protos` passes it to the compiler image as the third positional argument;
