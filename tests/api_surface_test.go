@@ -37,12 +37,6 @@ import (
 	sip "github.com/ondewo/ondewo-sip-client-go/v5/api/ondewo/sip"
 )
 
-// protoFileCount is the number of .proto files below ondewo-sip-api/ondewo that the compiler
-// consumed - SIP ships a single service proto, ondewo/sip/sip.proto. Every one of them has to end
-// up in the global descriptor registry when this package is linked; a proto that silently stopped
-// being compiled is otherwise invisible until a consumer misses a type.
-const protoFileCount = 1
-
 // services is every gRPC service this product exposes, keyed by the fully qualified proto name
 // the ServiceDesc must declare.
 var services = map[string]*grpc.ServiceDesc{
