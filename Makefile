@@ -53,7 +53,7 @@ ONDEWO_SIP_VERSION=5.5.2
 
 # Submodule pins - `make checkout_defined_submodule_versions` checks these out
 ONDEWO_SIP_API_GIT_BRANCH=tags/5.5.2
-ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.15.7
+ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.16.0
 
 # You need to setup an access token at https://github.com/settings/tokens - permissions are important
 GITHUB_GH_TOKEN?=ENTER_YOUR_TOKEN_HERE
