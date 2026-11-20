@@ -2,6 +2,15 @@
 
 *****************
 
+## Release ONDEWO SIP Go Client 5.7.0
+
+### Improvements
+
+* Tracking API Version [5.7.0](https://github.com/ondewo/ondewo-sip-api/releases/tag/5.7.0) ( [Documentation](https://ondewo.github.io/ondewo-sip-api/) )
+* [[OND236-120]](https://ondewo.atlassian.net/browse/OND236-120) Generated with ondewo-proto-compiler 5.17.0 (protoc 35.1). New runtime floors: `google.golang.org/grpc` v1.85.0 (carries the CVE-2026-84445 fix), `google.golang.org/protobuf` v1.36.12, genproto v0.0.0-20261116203732-fd2c7689a808; `go.mod` declares `go 1.26.0`.
+
+*****************
+
 ## Release ONDEWO SIP Go Client 5.5.2
 
 ### Improvements
